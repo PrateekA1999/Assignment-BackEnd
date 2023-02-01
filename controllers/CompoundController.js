@@ -2,6 +2,7 @@ const Compound = require("../models").compound;
 const config = require('../configs/configs.js');
 const fs = require("fs");
 const csv = require("fast-csv");
+const Op = require('sequelize').Op;
 
 //pagination to retrive data from database 
 const getPageDetails = (page, size) => {
@@ -13,9 +14,7 @@ const getPageDetails = (page, size) => {
 //pagination method to send request to the browser
 const getFormattedResponse = (data, page, limit) => {
     const { count: totalItems, rows: records } = data;
-    const currentPage = page ? page : 0;
-    const totalPages = Math.ceil(totalItems / limit);
-    return { totalItems, records, totalPages, currentPage };
+    return { totalItems, records};
 };
 
 
@@ -77,7 +76,12 @@ async function getAllC(req,res){
     try {
         const page = req.query.page;
         const size = req.query.size;
-        var condition =  req.body.condition;
+        var condition =  req.body.condition ? req.body.condition : null;
+        if(condition){
+            var key = Object.keys(condition)[0];
+            var value = "%"+condition[key]+ "%";
+            condition[key] = {[Op.like] : value};
+        }
         var sort = [req.body.sort.atr,req.body.sort.order];
         const { limit, offset } = getPageDetails(page, size);
         const result = await Compound.findAndCountAll({ where: condition, limit : limit, offset : offset ,order: [sort]});
